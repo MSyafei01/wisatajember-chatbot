@@ -1,9 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
   const chatBox = document.getElementById('chat-box');
   const inputField = document.getElementById('user-input');
-  
+
   // Pesan Selamat Datang
-  addBotMessage("👋 Halo Sobat Travel! Aku asisten AI Jember. Mau tanya pantai, kuliner, atau sejarah? Silakan ketik atau pilih saran di bawah ya. 🌊🏞️");
+  addBotMessage("👋 Halo Sobat Travel JEMBER! Aku asisten AI Jember. Mau tanya pantai, kuliner, atau sejarah? Silakan ketik atau pilih saran di bawah ya. 🌊🏞️");
 
   // Event Listener untuk Enter Key
   inputField.addEventListener('keypress', (e) => {
