@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>✨ Jember AI Travel - Explore The Tobacco City</title>
+  <!-- Font Awesome untuk Ikon -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="chat-container">
+  <!-- Header Upgrade -->
+  <div class="chat-header">
+    <div class="header-left">
+      <div class="ai-avatar">
+        <i class="fas fa-robot"></i>
+      </div>
+      <div class="header-text">
+        <h2>Jember AI Travel</h2>
+        <span class="status"><span class="status-dot"></span> Online • Siap Jelajah</span>
+      </div>
+    </div>
+    <i class="fas fa-map-marked-alt location-icon"></i>
+  </div>
+
+  <!-- Area Chat -->
+  <div id="chat-box" class="chat-box">
+    <!-- Pesan Selamat Datang (Dikirim dari JS) -->
+  </div>
+
+  <!-- Saran Pertanyaan (Quick Replies) -->
+  <div class="suggestions" id="suggestions-container">
+    <div class="suggestion-chip" data-query="Pantai terbaik di Jember"><i class="fas fa-umbrella-beach"></i> Pantai</div>
+    <div class="suggestion-chip" data-query="Kuliner khas Jember"><i class="fas fa-utensils"></i> Kuliner</div>
+    <div class="suggestion-chip" data-query="Air terjun di Jember"><i class="fas fa-water"></i> Air Terjun</div>
+    <div class="suggestion-chip" data-query="Sejarah Jember"><i class="fas fa-landmark"></i> Sejarah</div>
+  </div>
+
+  <!-- Area Input -->
+  <div class="input-area">
+    <div class="input-wrapper">
+      <input type="text" id="user-input" placeholder="Tanya destinasi wisata Jember..." autocomplete="off" />
+      <button id="send-btn" onclick="sendMessage()">
+        <i class="fas fa-paper-plane"></i>
+      </button>
+    </div>
+    <div class="input-footer">
+      <i class="fas fa-shield-alt"></i> AI Travel Guide • Jawaban cerdas seputar Jember
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
