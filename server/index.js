@@ -9,19 +9,29 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Ganti ke model yang tersedia
+// =============================================
+// API KEY - PASTIKAN FORMATNYA BENAR
+// =============================================
+const API_KEY = "AIzaSyDUMskpACXGhr2_An8oDu8JEo0OxrTWKhY";
 
-// SYSTEM INSTRUCTION (LEBIH DETAIL & SPESIFIK)
+// Inisialisasi Gemini
+const genAI = new GoogleGenerativeAI(API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+console.log("✅ Gemini AI berhasil diinisialisasi");
+
+// =============================================
+// SYSTEM PROMPT (WISATA JEMBER)
+// =============================================
 const SYSTEM_PROMPT = `Kamu adalah AI travel assistant khusus wisata Jember, Indonesia. Nama kamu adalah "Jember AI Travel".
 
 IDENTITAS & GAYA BICARA:
 - Gunakan bahasa Indonesia yang santai, ramah, dan bersemangat seperti tour guide lokal
-- Bisa menambahkan emoji sesekali untuk membuat percakapan lebih hidup 🌴
+- Tambahkan emoji sesekali untuk membuat percakapan lebih hidup 🌴
 - Panggil user dengan "Kakak" atau "Sobat Travel" untuk kesan akrab
 
 PENGETAHUAN WISATA JEMBER:
-Kamu harus menguasai informasi tentang:
+Kamu menguasai informasi tentang:
 
 1. PANTAI:
    - Pantai Papuma (Pasir Putih Malikan) - ikon Jember, pasir putih, bukit cinta
@@ -50,21 +60,22 @@ Kamu harus menguasai informasi tentang:
    - Kampung Batik Sumberpakem - batik khas daun tembakau
    - Can Macanan Kadduk - tradisi macan-macanan
 
-5. ITINERARY:
-   Bisa membuat rencana perjalanan 1-3 hari dengan estimasi waktu, budget, dan tips.
-
 FORMAT JAWABAN:
 - Untuk rekomendasi tempat: berikan nama, lokasi singkat, daya tarik utama, estimasi biaya
 - Untuk itinerary: buat daftar per hari dengan timeline
 - Untuk kuliner: sebutkan tempat terkenal dan kisaran harga
-- Jika user tanya di luar wisata Jember, arahkan kembali ke topik Jember dengan ramah
 
 DISCLAIMER:
-Jika ada informasi yang tidak kamu ketahui atau sudah berubah, sampaikan dengan jujur dan sarankan untuk cek info terkini di media sosial resmi atau Google Maps.`;
+Jika ada informasi yang tidak kamu ketahui, sampaikan dengan jujur dan sarankan untuk cek info terkini di Google Maps.`;
 
-// Store chat history per session (untuk produksi gunakan Redis/database)
+// =============================================
+// STORE CHAT HISTORY (SESSION MEMORY)
+// =============================================
 const chatSessions = new Map();
 
+// =============================================
+// API ENDPOINT: /api/chat
+// =============================================
 app.post("/api/chat", async (req, res) => {
   try {
     const { message, sessionId } = req.body;
@@ -86,8 +97,7 @@ app.post("/api/chat", async (req, res) => {
     let fullPrompt = SYSTEM_PROMPT + "\n\n=== RIWAYAT PERCAKAPAN ===\n";
     
     if (history.length > 0) {
-      // Ambil maksimal 6 pesan terakhir untuk konteks
-      const recentHistory = history.slice(-6);
+      const recentHistory = history.slice(-6); // 6 pesan terakhir
       recentHistory.forEach(chat => {
         fullPrompt += `${chat.role}: ${chat.content}\n`;
       });
@@ -97,10 +107,14 @@ app.post("/api/chat", async (req, res) => {
     fullPrompt += `User: ${message}\n`;
     fullPrompt += `Assistant: `;
 
+    console.log("📨 Mengirim request ke Gemini...");
+
     // Generate response dari Gemini
     const result = await model.generateContent(fullPrompt);
     const response = await result.response;
     const replyText = response.text();
+
+    console.log("✅ Response diterima dari Gemini");
 
     // Simpan ke history
     history.push({ role: "User", content: message });
@@ -118,24 +132,25 @@ app.post("/api/chat", async (req, res) => {
     });
 
   } catch (error) {
-    console.error("❌ Error detail:", error);
+    console.error("❌ Error detail:", error.message);
     
-    // Error handling yang lebih spesifik
     let errorMessage = "⚠️ Maaf, ada gangguan teknis nih. Coba lagi sebentar ya Kakak 🙏";
     
     if (error.message?.includes("API key")) {
-      errorMessage = "🔑 API key belum disetting dengan benar. Cek file .env ya!";
-    } else if (error.message?.includes("model")) {
-      errorMessage = "🤖 Model AI sedang sibuk, coba lagi dalam beberapa saat ya...";
+      errorMessage = "🔑 API key tidak valid. Cek kembali API key di Google AI Studio.";
     } else if (error.message?.includes("quota")) {
       errorMessage = "💳 Kuota API sudah habis nih, perlu top up dulu.";
+    } else if (error.message?.includes("network")) {
+      errorMessage = "🌐 Gangguan jaringan. Cek koneksi internet kamu ya.";
     }
     
     res.status(500).json({ reply: errorMessage });
   }
 });
 
-// Endpoint untuk reset history
+// =============================================
+// API ENDPOINT: /api/reset (Reset History)
+// =============================================
 app.post("/api/reset", (req, res) => {
   const { sessionId } = req.body;
   const sessionKey = sessionId || 'default';
@@ -143,7 +158,9 @@ app.post("/api/reset", (req, res) => {
   res.json({ message: "History direset, siap eksplor Jember lagi! 🌟" });
 });
 
-// Health check endpoint
+// =============================================
+// API ENDPOINT: /api/health (Health Check)
+// =============================================
 app.get("/api/health", (req, res) => {
   res.json({ 
     status: "OK", 
@@ -152,14 +169,17 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// =============================================
+// JALANKAN SERVER
+// =============================================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`
-╔════════════════════════════════════════╗
-║   🌴 Jember AI Travel Server          ║
-║   Server jalan di http://localhost:${PORT}  ║
-║   Siap rekomendasiin wisata Jember!   ║
-╚════════════════════════════════════════╝
+╔════════════════════════════════════════════╗
+║     🌴 Jember AI Travel Server            ║
+║     Server jalan di http://localhost:${PORT}  ║
+║     Siap rekomendasiin wisata Jember!     ║
+╚════════════════════════════════════════════╝
   `);
 });
 
