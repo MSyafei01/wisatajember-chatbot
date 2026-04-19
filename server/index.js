@@ -16,10 +16,10 @@ const API_KEY = "AIzaSyDUMskpACXGhr2_An8oDu8JEo0OxrTWKhY";
 
 // Inisialisasi Gemini
 const genAI = new GoogleGenerativeAI(API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+// const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 // const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" }); // ✅ Recommended
 // const model = genAI.getGenerativeModel({ model: "gemini-pro" });           // Alternatif 1
-// const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });       // Alternatif 2
+ const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });       // Alternatif 2
 
 console.log("✅ Gemini AI berhasil diinisialisasi");
 
