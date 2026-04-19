@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import express from "express";
 
+
 dotenv.config();
 
 const app = express();

@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   const chatBox = document.getElementById('chat-box');
   const inputField = document.getElementById('user-input');
+  let chatHistory = [];
 
   // Pesan Selamat Datang
   addBotMessage("👋 Halo Sobat Travel JEMBER! Aku asisten AI Jember. Mau tanya pantai, kuliner, atau sejarah? Silakan ketik atau pilih saran di bawah ya. 🌊🏞️");
@@ -94,13 +95,18 @@ async function sendMessage() {
     // Simulasi delay untuk realisme (bisa dihapus jika API cepat)
     // await new Promise(resolve => setTimeout(resolve, 800));
 
-    const res = await fetch("http://localhost:3000/api/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ message: userText })
-    });
+chatHistory.push({ role: "user", content: userText });
+
+const res = await fetch("http://localhost:3000/api/chat", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({ 
+    message: userText,
+    history: chatHistory
+  })
+});
 
     if (!res.ok) {
       throw new Error(`HTTP error! status: ${res.status}`);
