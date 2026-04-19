@@ -1,14 +1,22 @@
+// Generate random session ID
+const sessionId = 'session_' + Math.random().toString(36).substring(2, 15);
+
 document.addEventListener('DOMContentLoaded', () => {
   const chatBox = document.getElementById('chat-box');
   const inputField = document.getElementById('user-input');
-  let chatHistory = [];
-
+  
+  // Cek koneksi server
+  checkServerHealth();
+  
   // Pesan Selamat Datang
-  addBotMessage("👋 Halo Sobat Travel JEMBER! Aku asisten AI Jember. Mau tanya pantai, kuliner, atau sejarah? Silakan ketik atau pilih saran di bawah ya. 🌊🏞️");
+  setTimeout(() => {
+    addBotMessage("👋 Halooo Sobat Travel! Aku asisten AI khusus Jember nih. Mau tanya pantai terindah, kulier legendaris, atau itinerary seru? Tinggal ketik aja ya! 🌊✨");
+  }, 500);
 
   // Event Listener untuk Enter Key
   inputField.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
       sendMessage();
     }
   });
@@ -21,7 +29,46 @@ document.addEventListener('DOMContentLoaded', () => {
       sendMessage();
     });
   });
+
+  // Tambahkan fitur reset dengan ketik "/reset"
+  inputField.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && inputField.value.trim() === '/reset') {
+      e.preventDefault();
+      resetChat();
+    }
+  });
 });
+
+// Cek health server
+async function checkServerHealth() {
+  try {
+    const res = await fetch("http://localhost:3000/api/health");
+    const data = await res.json();
+    console.log("✅ Server:", data.message);
+  } catch (error) {
+    console.warn("⚠️ Server belum nyala, pastikan backend running di port 3000");
+    addBotMessage("⚠️ Servernya belum nyala nih Kakak. Jalanin backend dulu ya dengan perintah: <code>npm start</code>");
+  }
+}
+
+// Reset chat
+async function resetChat() {
+  try {
+    await fetch("http://localhost:3000/api/reset", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId })
+    });
+    
+    const chatBox = document.getElementById('chat-box');
+    chatBox.innerHTML = '';
+    addBotMessage("🔄 History chat sudah direset! Sekarang kita mulai petualangan baru di Jember. Mau tanya apa dulu nih? 🌴");
+    
+    document.getElementById('user-input').value = '';
+  } catch (error) {
+    console.error("Reset error:", error);
+  }
+}
 
 // Fungsi untuk menambah pesan user
 function addUserMessage(text) {
@@ -32,16 +79,23 @@ function addUserMessage(text) {
   chatBox.appendChild(userDiv);
 }
 
-// Fungsi untuk menambah pesan bot
+// Fungsi untuk menambah pesan bot (support HTML sederhana)
 function addBotMessage(text) {
   const chatBox = document.getElementById('chat-box');
   const botDiv = document.createElement('div');
   botDiv.className = 'bot';
-  botDiv.innerHTML = `<span><i class="fas fa-map-pin"></i> ${escapeHTML(text)}</span>`;
+  
+  // Parse markdown sederhana untuk bold dan code
+  let formattedText = escapeHTML(text)
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`(.*?)`/g, '<code>$1</code>')
+    .replace(/\n/g, '<br>');
+  
+  botDiv.innerHTML = `<span><i class="fas fa-map-pin"></i> ${formattedText}</span>`;
   chatBox.appendChild(botDiv);
 }
 
-// Fungsi sederhana untuk mencegah XSS (Cross-Site Scripting)
+// Escape HTML untuk keamanan
 function escapeHTML(text) {
   const div = document.createElement('div');
   div.textContent = text;
@@ -92,44 +146,72 @@ async function sendMessage() {
   showTypingIndicator();
 
   try {
-    // Simulasi delay untuk realisme (bisa dihapus jika API cepat)
-    // await new Promise(resolve => setTimeout(resolve, 800));
-
-chatHistory.push({ role: "user", content: userText });
-
-const res = await fetch("http://localhost:3000/api/chat", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({ 
-    message: userText,
-    history: chatHistory
-  })
-});
+    const res = await fetch("http://localhost:3000/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ 
+        message: userText,
+        sessionId: sessionId 
+      })
+    });
 
     if (!res.ok) {
       throw new Error(`HTTP error! status: ${res.status}`);
     }
 
-const data = await res.json();
-// Hapus indikator mengetik
-removeTypingIndicator();
-
-// Simpan ke memory (INI YANG DITANYAKAN)
-chatHistory.push({ role: "bot", content: data.reply });
-
-// Tampilkan balasan bot
-addBotMessage(data.reply);
+    const data = await res.json();
     
-
+    // Hapus indikator mengetik
+    removeTypingIndicator();
+    
+    // Tampilkan balasan bot
+    addBotMessage(data.reply);
+    
   } catch (error) {
     console.error("Error:", error);
     removeTypingIndicator();
-    addBotMessage("⚠️ Maaf, ada gangguan jaringan atau server belum menyala. Pastikan backend berjalan di port 3000 ya.");
+    
+    if (error.message.includes("Failed to fetch")) {
+      addBotMessage("🔌 Waduh, server belum nyala nih. Coba jalankan <code>npm start</code> di folder backend dulu ya Kakak! 🙏");
+    } else {
+      addBotMessage("⚠️ Maaf, ada gangguan teknis. Coba lagi sebentar ya Kakak.");
+    }
   } finally {
     sendBtn.disabled = false;
     chatBox.scrollTop = chatBox.scrollHeight;
     input.focus();
   }
 }
+
+// Tambahan: Tombol reset di UI (opsional)
+function addResetButton() {
+  const headerRight = document.querySelector('.header-left');
+  if (headerRight) {
+    const resetBtn = document.createElement('button');
+    resetBtn.innerHTML = '<i class="fas fa-redo-alt"></i>';
+    resetBtn.style.cssText = `
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      margin-left: auto;
+      margin-right: 10px;
+      transition: 0.2s;
+    `;
+    resetBtn.onmouseover = () => resetBtn.style.background = 'rgba(255,255,255,0.3)';
+    resetBtn.onmouseout = () => resetBtn.style.background = 'rgba(255,255,255,0.2)';
+    resetBtn.onclick = resetChat;
+    resetBtn.title = "Reset Chat";
+    
+    const headerLeft = document.querySelector('.chat-header');
+    headerLeft.appendChild(resetBtn);
+  }
+}
+
+// Panggil saat load
+setTimeout(addResetButton, 100);
