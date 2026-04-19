@@ -17,6 +17,9 @@ const API_KEY = "AIzaSyDUMskpACXGhr2_An8oDu8JEo0OxrTWKhY";
 // Inisialisasi Gemini
 const genAI = new GoogleGenerativeAI(API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+// const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" }); // ✅ Recommended
+// const model = genAI.getGenerativeModel({ model: "gemini-pro" });           // Alternatif 1
+// const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });       // Alternatif 2
 
 console.log("✅ Gemini AI berhasil diinisialisasi");
 
@@ -175,11 +178,11 @@ app.get("/api/health", (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`
-╔════════════════════════════════════════════╗
-║     🌴 Jember AI Travel Server            ║
+╔═══════════════════════════════════════════════╗
+║     🌴 Jember AI Travel Server               ║
 ║     Server jalan di http://localhost:${PORT}  ║
-║     Siap rekomendasiin wisata Jember!     ║
-╚════════════════════════════════════════════╝
+║     Siap rekomendasiin wisata Jember!         ║
+╚═══════════════════════════════════════════════╝
   `);
 });
 
