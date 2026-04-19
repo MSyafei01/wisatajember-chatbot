@@ -51,7 +51,7 @@ if (history && history.length > 0) {
 fullPrompt += `User: ${message}`;
 
     const result = await model.generateContent(fullPrompt);
-    
+
     const response = result.response.text();
 
     res.json({ reply: response });
@@ -61,7 +61,6 @@ fullPrompt += `User: ${message}`;
     res.status(500).json({ error: "Terjadi kesalahan server" });
   }
 });
-
 
 app.listen(3000, () => {
   console.log("Server jalan di http://localhost:3000");
