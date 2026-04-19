@@ -112,13 +112,15 @@ const res = await fetch("http://localhost:3000/api/chat", {
       throw new Error(`HTTP error! status: ${res.status}`);
     }
 
-    const data = await res.json();
-    
-    // Hapus indikator mengetik
-    removeTypingIndicator();
-    
-    // Tampilkan balasan bot
-    addBotMessage(data.reply);
+const data = await res.json();
+// Hapus indikator mengetik
+removeTypingIndicator();
+
+// Simpan ke memory (INI YANG DITANYAKAN)
+chatHistory.push({ role: "bot", content: data.reply });
+
+// Tampilkan balasan bot
+addBotMessage(data.reply);
     
   } catch (error) {
     console.error("Error:", error);
