@@ -122,6 +122,7 @@ chatHistory.push({ role: "bot", content: data.reply });
 // Tampilkan balasan bot
 addBotMessage(data.reply);
     
+
   } catch (error) {
     console.error("Error:", error);
     removeTypingIndicator();
