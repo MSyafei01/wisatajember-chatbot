@@ -2,7 +2,6 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import express from "express";
 
 
 dotenv.config();
@@ -32,15 +31,27 @@ Jika tidak yakin, beri disclaimer.
 
 app.post("/api/chat", async (req, res) => {
   try {
-    const { message } = req.body;
+
 
     if (!message) {
       return res.status(400).json({ error: "Message kosong" });
     }
+    const { message, history } = req.body;
 
-    const prompt = `${SYSTEM_PROMPT}\nUser: ${message}`;
+let fullPrompt = SYSTEM_PROMPT + "\n";
 
-    const result = await model.generateContent(prompt);
+// Tambahkan riwayat chat (kalau ada)
+if (history && history.length > 0) {
+  history.forEach(chat => {
+    fullPrompt += `${chat.role}: ${chat.content}\n`;
+  });
+}
+
+// Tambahkan pesan terbaru
+fullPrompt += `User: ${message}`;
+
+    const result = await model.generateContent(fullPrompt);
+    
     const response = result.response.text();
 
     res.json({ reply: response });
@@ -50,6 +61,7 @@ app.post("/api/chat", async (req, res) => {
     res.status(500).json({ error: "Terjadi kesalahan server" });
   }
 });
+
 
 app.listen(3000, () => {
   console.log("Server jalan di http://localhost:3000");
