@@ -10,18 +10,28 @@ app.use(cors());
 app.use(express.json());
 
 // =============================================
-// API KEY - PASTIKAN FORMATNYA BENAR
+// API KEY
 // =============================================
-const API_KEY = process.env.GEMINI_API_KEY;
+const API_KEY = process.env.GEMINI_API_KEY || "AIzaSyDUMskpACXGhr2_An8oDu8JEo0OxrTWKhY";
 
 // Inisialisasi Gemini
 const genAI = new GoogleGenerativeAI(API_KEY);
-// const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-// const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" }); // ✅ Recommended
-// const model = genAI.getGenerativeModel({ model: "gemini-pro" });           // Alternatif 1
- const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });       // Alternatif 2
 
-console.log("✅ Gemini AI berhasil diinisialisasi");
+// =============================================
+// MODEL SELECTION - UNCOMMENT YANG AKTIF
+// =============================================
+// Ganti model di sini dan lihat perubahannya di terminal
+const MODEL_NAME = "gemini-2.0-flash-exp"; // ⬅️ MODEL AKTIF SAAT INI
+// const MODEL_NAME = "gemini-1.5-flash";
+// const MODEL_NAME = "gemini-pro";
+// const MODEL_NAME = "gemini-1.5-pro";
+
+const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+
+console.log("========================================");
+console.log("🤖 MODEL GEMINI YANG DIGUNAKAN:");
+console.log(`   ➜ ${MODEL_NAME}`);
+console.log("========================================");
 
 // =============================================
 // SYSTEM PROMPT (WISATA JEMBER)
@@ -61,20 +71,31 @@ Kamu menguasai informasi tentang:
   - Museum Tembakau - sejarah Jember kota tembakau
   - Jember Fashion Carnaval (JFC) - karnaval kelas dunia
   - Kampung Batik Sumberpakem - batik khas daun tembakau
-  - Can Macanan Kadduk - tradisi macan-macanan
 
 FORMAT JAWABAN:
-- Untuk rekomendasi tempat: berikan nama, lokasi singkat, daya tarik utama, estimasi biaya
-- Untuk itinerary: buat daftar per hari dengan timeline
-- Untuk kuliner: sebutkan tempat terkenal dan kisaran harga
+- Singkat, padat, informatif (maksimal 3-4 paragraf)
+- Gunakan bullet points untuk rekomendasi
+- Tambahkan estimasi biaya jika relevan
 
 DISCLAIMER:
-Jika ada informasi yang tidak kamu ketahui, sampaikan dengan jujur dan sarankan untuk cek info terkini di Google Maps.`;
+Jika tidak yakin, sarankan untuk cek Google Maps atau info terbaru.`;
 
 // =============================================
 // STORE CHAT HISTORY (SESSION MEMORY)
 // =============================================
 const chatSessions = new Map();
+
+// =============================================
+// API ENDPOINT: /api/model (Cek Model Aktif)
+// =============================================
+app.get("/api/model", (req, res) => {
+  res.json({
+    model: MODEL_NAME,
+    provider: "Google Gemini AI",
+    status: "active",
+    timestamp: new Date().toISOString()
+  });
+});
 
 // =============================================
 // API ENDPOINT: /api/chat
@@ -89,18 +110,16 @@ app.post("/api/chat", async (req, res) => {
       });
     }
 
-    // Ambil atau buat history untuk session ini
     const sessionKey = sessionId || 'default';
     if (!chatSessions.has(sessionKey)) {
       chatSessions.set(sessionKey, []);
     }
     const history = chatSessions.get(sessionKey);
 
-    // Bangun prompt dengan history
     let fullPrompt = SYSTEM_PROMPT + "\n\n=== RIWAYAT PERCAKAPAN ===\n";
     
     if (history.length > 0) {
-      const recentHistory = history.slice(-6); // 6 pesan terakhir
+      const recentHistory = history.slice(-6);
       recentHistory.forEach(chat => {
         fullPrompt += `${chat.role}: ${chat.content}\n`;
       });
@@ -110,20 +129,17 @@ app.post("/api/chat", async (req, res) => {
     fullPrompt += `User: ${message}\n`;
     fullPrompt += `Assistant: `;
 
-    console.log("📨 Mengirim request ke Gemini...");
+    console.log(`📨 [${MODEL_NAME}] Mengirim request ke Gemini...`);
 
-    // Generate response dari Gemini
     const result = await model.generateContent(fullPrompt);
     const response = await result.response;
     const replyText = response.text();
 
-    console.log("✅ Response diterima dari Gemini");
+    console.log(`✅ [${MODEL_NAME}] Response diterima`);
 
-    // Simpan ke history
     history.push({ role: "User", content: message });
     history.push({ role: "Assistant", content: replyText });
     
-    // Batasi history maksimal 20 item
     if (history.length > 20) {
       history.splice(0, 2);
     }
@@ -131,7 +147,8 @@ app.post("/api/chat", async (req, res) => {
 
     res.json({ 
       reply: replyText,
-      sessionId: sessionKey 
+      sessionId: sessionKey,
+      model: MODEL_NAME // ⬅️ Kirim info model ke frontend
     });
 
   } catch (error) {
@@ -140,11 +157,11 @@ app.post("/api/chat", async (req, res) => {
     let errorMessage = "⚠️ Maaf, ada gangguan teknis nih. Coba lagi sebentar ya Kakak 🙏";
     
     if (error.message?.includes("API key")) {
-      errorMessage = "🔑 API key tidak valid. Cek kembali API key di Google AI Studio.";
+      errorMessage = "🔑 API key tidak valid.";
     } else if (error.message?.includes("quota")) {
-      errorMessage = "💳 Kuota API sudah habis nih, perlu top up dulu.";
-    } else if (error.message?.includes("network")) {
-      errorMessage = "🌐 Gangguan jaringan. Cek koneksi internet kamu ya.";
+      errorMessage = "💳 Kuota API sudah habis.";
+    } else if (error.message?.includes("not found") || error.message?.includes("404")) {
+      errorMessage = `🤖 Model ${MODEL_NAME} tidak tersedia. Ganti ke model lain.`;
     }
     
     res.status(500).json({ reply: errorMessage });
@@ -152,22 +169,23 @@ app.post("/api/chat", async (req, res) => {
 });
 
 // =============================================
-// API ENDPOINT: /api/reset (Reset History)
+// API ENDPOINT: /api/reset
 // =============================================
 app.post("/api/reset", (req, res) => {
   const { sessionId } = req.body;
   const sessionKey = sessionId || 'default';
   chatSessions.delete(sessionKey);
-  res.json({ message: "History direset, siap eksplor Jember lagi! 🌟" });
+  res.json({ message: "History direset! 🌟" });
 });
 
 // =============================================
-// API ENDPOINT: /api/health (Health Check)
+// API ENDPOINT: /api/health
 // =============================================
 app.get("/api/health", (req, res) => {
   res.json({ 
     status: "OK", 
     message: "🌴 Jember AI Travel siap melayani!",
+    model: MODEL_NAME,
     timestamp: new Date().toISOString()
   });
 });
@@ -178,16 +196,16 @@ app.get("/api/health", (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`
-╔═══════════════════════════════════════════════╗
-║     🌴 Jember AI Travel Server               ║
-║     Server jalan di http://localhost:${PORT}  ║
-║     Siap rekomendasiin wisata Jember!         ║
-╚═══════════════════════════════════════════════╝
+╔══════════════════════════════════════════════════╗
+║       🌴 Jember AI Travel Server                 ║
+║       Server  : http://localhost:${PORT}         ║
+║       Model   : ${MODEL_NAME}                    ║
+║       Status  : Ready 🚀                         ║
+╚══════════════════════════════════════════════════╝
   `);
 });
 
-// Graceful shutdown
 process.on('SIGINT', () => {
-  console.log('\n👋 Server dimatikan. Sampai jumpa di Jember!');
+  console.log('\n👋 Server dimatikan.');
   process.exit(0);
 });
