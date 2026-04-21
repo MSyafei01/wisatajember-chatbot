@@ -1,4 +1,9 @@
 {
+
+  "model": "gemini-2.0-flash-exp",
+  "provider": "Google Gemini AI",
+  "status": "active",
+  "timestamp": "2024-01-15T10:30:00.000Z",
   "name": "server",
   "version": "1.0.0",
   "description": "",
