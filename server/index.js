@@ -12,7 +12,7 @@ app.use(express.json());
 // =============================================
 // API KEY - PASTIKAN FORMATNYA BENAR
 // =============================================
-const API_KEY = "AIzaSyDUMskpACXGhr2_An8oDu8JEo0OxrTWKhY";
+const API_KEY = process.env.GEMINI_API_KEY;
 
 // Inisialisasi Gemini
 const genAI = new GoogleGenerativeAI(API_KEY);
